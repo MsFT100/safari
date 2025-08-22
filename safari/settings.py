@@ -28,6 +28,9 @@ DEBUG = True
 
 ALLOWED_HOSTS = []
 
+# Your application's domain
+SITE_DOMAIN = os.environ.get('SITE_DOMAIN', 'http://localhost:8000')
+
 
 # Application definition
 
@@ -39,6 +42,9 @@ INSTALLED_APPS = [
     'django.contrib.messages',
     'django.contrib.staticfiles',
     'django.contrib.sites',
+
+    # Local apps (use AppConfig for signal registration)
+    'pesapal.apps.PesapalConfig',
 
     # Third-party apps
     'rest_framework',
@@ -181,3 +187,28 @@ STATIC_URL = 'static/'
 # https://docs.djangoproject.com/en/4.2/ref/settings/#default-auto-field
 
 DEFAULT_AUTO_FIELD = 'django.db.models.BigAutoField'
+
+# Pesapal Configuration
+PESAPAL_BASE_URL = os.environ.get('PESAPAL_BASE_URL', 'https://cybqa.pesapal.com/pesapalv3/api') # Sandbox URL
+PESAPAL_CONSUMER_KEY = os.environ.get('PESAPAL_CONSUMER_KEY')
+PESAPAL_CONSUMER_SECRET = os.environ.get('PESAPAL_CONSUMER_SECRET')
+# Note: The callback URL path is /api/pesapal/ + pesapal/callback/ from your url configs
+PESAPAL_CALLBACK_URL = f'{SITE_DOMAIN}/api/pesapal/pesapal/callback/'
+PESAPAL_NOTIFICATION_ID = os.environ.get('PESAPAL_NOTIFICATION_ID') # Get this from your Pesapal portal
+
+# Celery Configuration
+# Ensure you have a message broker like Redis or RabbitMQ running.
+CELERY_BROKER_URL = os.environ.get('CELERY_BROKER_URL', 'redis://localhost:6379/0')
+CELERY_RESULT_BACKEND = os.environ.get('CELERY_RESULT_BACKEND', 'redis://localhost:6379/0')
+CELERY_ACCEPT_CONTENT = ['json']
+CELERY_TASK_SERIALIZER = 'json'
+CELERY_RESULT_SERIALIZER = 'json'
+CELERY_TIMEZONE = TIME_ZONE
+
+# Celery Beat (Periodic Tasks) Configuration
+CELERY_BEAT_SCHEDULE = {
+    'verify-pending-pesapal-transactions': {
+        'task': 'pesapal.tasks.verify_pending_transactions',
+        'schedule': timedelta(minutes=15),  # How often to run the verification task
+    },
+}
